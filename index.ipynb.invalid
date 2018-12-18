@@ -1,0 +1,523 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Evaluating Regression Lines Lab"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Introduction"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "In the previous lesson, we learned to evaluate how well a regression line estimated our actual data.  In this lab, we will turn these formulas into code.  In doing so, we'll build lots of useful functions for both calculating and displaying our errors for a given regression line and dataset."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> In moving through this lab, we'll access to the functions that we previously built out to plot our data, available in the [graph](https://github.com/learn-co-curriculum/evaluating-regression-lines-lab/blob/master/graph.py) here."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Determining Quality"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "In the file, `movie_data.py` you will find movie data written as a python list of dictionaries, with each dictionary representing a movie.  The movies are derived from the first 30 entries from the dataset containing 538 movies [provided here](https://raw.githubusercontent.com/fivethirtyeight/data/master/bechdel/movies.csv)."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "30"
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "from movie_data import movies \n",
+    "len(movies)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> Press shift + enter"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'budget': 13000000, 'domgross': 25682380.0, 'title': '21 &amp; Over'}"
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "movies[0]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "13.0"
+      ]
+     },
+     "execution_count": 5,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "movies[0]['budget']/1000000"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The numbers are in millions, so we will simplify things by dividing everything by a million"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'title': '21 &amp; Over', 'budget': 13.0, 'domgross': 26.0}"
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "scaled_movies = list(map(lambda movie: {'title': movie['title'], 'budget': round(movie['budget']/1000000, 0), 'domgross': round(movie['domgross']/1000000, 0)}, movies))\n",
+    "scaled_movies[0]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "collapsed": true
+   },
+   "source": [
+    "Note that, like in previous lessons, the budget is our explanatory value and the revenue is our dependent variable.  Here revenue is represented as the key `domgross`.  \n",
+    "\n",
+    "#### Plotting our data\n",
+    "\n",
+    "Let's write the code to plot this data set.\n",
+    "\n",
+    "As a first task, convert the budget values of our `scaled_movies` to `x_values`, and convert the domgross values of the `scaled_movies` to `y_values`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x_values = list(map(lambda show: round(show['budget']/1000000,0),movies))\n",
+    "y_values = list(map(lambda show: round(show['domgross']/1000000,0),movies))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "13.0"
+      ]
+     },
+     "execution_count": 8,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "x_values and x_values[0] # 13.0"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "26.0"
+      ]
+     },
+     "execution_count": 9,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "y_values and y_values[0] # 26.0"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Assign a variable called `titles` equal to the titles of the movies."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "titles = list(map(lambda movie: dict(title= movie['title']),movies))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'title': '21 &amp; Over'}"
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "titles and titles[0]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Great! Now we have the data necessary to make a trace of our data."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<script>requirejs.config({paths: { 'plotly': ['https://cdn.plot.ly/plotly-latest.min']},});if(!window.Plotly) {{require(['plotly'],function(plotly) {window.Plotly=plotly;});}}</script>"
+      ],
+      "text/vnd.plotly.v1+html": [
+       "<script>requirejs.config({paths: { 'plotly': ['https://cdn.plot.ly/plotly-latest.min']},});if(!window.Plotly) {{require(['plotly'],function(plotly) {window.Plotly=plotly;});}}</script>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<script>requirejs.config({paths: { 'plotly': ['https://cdn.plot.ly/plotly-latest.min']},});if(!window.Plotly) {{require(['plotly'],function(plotly) {window.Plotly=plotly;});}}</script>"
+      ],
+      "text/vnd.plotly.v1+html": [
+       "<script>requirejs.config({paths: { 'plotly': ['https://cdn.plot.ly/plotly-latest.min']},});if(!window.Plotly) {{require(['plotly'],function(plotly) {window.Plotly=plotly;});}}</script>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.plotly.v1+json": {
+       "data": [
+        {
+         "mode": "markers",
+         "name": "movie data",
+         "text": [
+          "{'title': '21 &amp; Over'}",
+          "{'title': 'Dredd 3D'}",
+          "{'title': '12 Years a Slave'}",
+          "{'title': '2 Guns'}",
+          "{'title': '42'}",
+          "{'title': '47 Ronin'}",
+          "{'title': 'A Good Day to Die Hard'}",
+          "{'title': 'About Time'}",
+          "{'title': 'After Earth'}",
+          "{'title': 'August: Osage County'}",
+          "{'title': 'Beautiful Creatures'}",
+          "{'title': 'Blue Jasmine'}",
+          "{'title': 'Captain Phillips'}",
+          "{'title': 'Carrie'}",
+          "{'title': 'Cloudy with a Chance of Meatballs 2'}",
+          "{'title': 'Despicable Me 2'}",
+          "{'title': 'Don Jon'}",
+          "{'title': 'Elysium'}",
+          "{'title': 'Ender&#39;s Game'}",
+          "{'title': 'Epic'}",
+          "{'title': 'Escape Plan'}",
+          "{'title': 'Evil Dead'}",
+          "{'title': 'Fast and Furious 6'}",
+          "{'title': 'Frozen'}",
+          "{'title': 'G.I. Joe: Retaliation'}",
+          "{'title': 'Gangster Squad'}",
+          "{'title': 'Grown Ups'}",
+          "{'title': 'Her'}",
+          "{'title': 'Identity Thief'}",
+          "{'title': 'Iron Man 3'}"
+         ],
+         "type": "scatter",
+         "uid": "a723d37e-0192-11e9-95c9-5b525f55558c",
+         "x": [
+          13,
+          46,
+          20,
+          61,
+          40,
+          225,
+          92,
+          12,
+          130,
+          25,
+          50,
+          18,
+          55,
+          30,
+          78,
+          76,
+          6,
+          120,
+          110,
+          100,
+          70,
+          17,
+          160,
+          150,
+          140,
+          60,
+          80,
+          23,
+          35,
+          200
+         ],
+         "y": [
+          26,
+          13,
+          53,
+          76,
+          95,
+          38,
+          67,
+          15,
+          61,
+          37,
+          19,
+          33,
+          107,
+          35,
+          120,
+          368,
+          24,
+          93,
+          62,
+          108,
+          25,
+          54,
+          239,
+          393,
+          123,
+          46,
+          134,
+          25,
+          135,
+          409
+         ]
+        }
+       ],
+       "layout": {}
+      },
+      "text/html": [
+       "<div id=\"5e2b3bca-d50c-46ed-b17d-38edf0c43709\" style=\"height: 525px; width: 100%;\" class=\"plotly-graph-div\"></div><script type=\"text/javascript\">require([\"plotly\"], function(Plotly) { window.PLOTLYENV=window.PLOTLYENV || {};window.PLOTLYENV.BASE_URL=\"https://plot.ly\";Plotly.newPlot(\"5e2b3bca-d50c-46ed-b17d-38edf0c43709\", [{\"mode\": \"markers\", \"name\": \"movie data\", \"text\": [\"{'title': '21 &amp; Over'}\", \"{'title': 'Dredd 3D'}\", \"{'title': '12 Years a Slave'}\", \"{'title': '2 Guns'}\", \"{'title': '42'}\", \"{'title': '47 Ronin'}\", \"{'title': 'A Good Day to Die Hard'}\", \"{'title': 'About Time'}\", \"{'title': 'After Earth'}\", \"{'title': 'August: Osage County'}\", \"{'title': 'Beautiful Creatures'}\", \"{'title': 'Blue Jasmine'}\", \"{'title': 'Captain Phillips'}\", \"{'title': 'Carrie'}\", \"{'title': 'Cloudy with a Chance of Meatballs 2'}\", \"{'title': 'Despicable Me 2'}\", \"{'title': 'Don Jon'}\", \"{'title': 'Elysium'}\", \"{'title': 'Ender&#39;s Game'}\", \"{'title': 'Epic'}\", \"{'title': 'Escape Plan'}\", \"{'title': 'Evil Dead'}\", \"{'title': 'Fast and Furious 6'}\", \"{'title': 'Frozen'}\", \"{'title': 'G.I. Joe: Retaliation'}\", \"{'title': 'Gangster Squad'}\", \"{'title': 'Grown Ups'}\", \"{'title': 'Her'}\", \"{'title': 'Identity Thief'}\", \"{'title': 'Iron Man 3'}\"], \"x\": [13.0, 46.0, 20.0, 61.0, 40.0, 225.0, 92.0, 12.0, 130.0, 25.0, 50.0, 18.0, 55.0, 30.0, 78.0, 76.0, 6.0, 120.0, 110.0, 100.0, 70.0, 17.0, 160.0, 150.0, 140.0, 60.0, 80.0, 23.0, 35.0, 200.0], \"y\": [26.0, 13.0, 53.0, 76.0, 95.0, 38.0, 67.0, 15.0, 61.0, 37.0, 19.0, 33.0, 107.0, 35.0, 120.0, 368.0, 24.0, 93.0, 62.0, 108.0, 25.0, 54.0, 239.0, 393.0, 123.0, 46.0, 134.0, 25.0, 135.0, 409.0], \"type\": \"scatter\", \"uid\": \"a749b62a-0192-11e9-95c9-5b525f55558c\"}], {}, {\"showLink\": true, \"linkText\": \"Export to plot.ly\"})});</script>"
+      ],
+      "text/vnd.plotly.v1+html": [
+       "<div id=\"5e2b3bca-d50c-46ed-b17d-38edf0c43709\" style=\"height: 525px; width: 100%;\" class=\"plotly-graph-div\"></div><script type=\"text/javascript\">require([\"plotly\"], function(Plotly) { window.PLOTLYENV=window.PLOTLYENV || {};window.PLOTLYENV.BASE_URL=\"https://plot.ly\";Plotly.newPlot(\"5e2b3bca-d50c-46ed-b17d-38edf0c43709\", [{\"mode\": \"markers\", \"name\": \"movie data\", \"text\": [\"{'title': '21 &amp; Over'}\", \"{'title': 'Dredd 3D'}\", \"{'title': '12 Years a Slave'}\", \"{'title': '2 Guns'}\", \"{'title': '42'}\", \"{'title': '47 Ronin'}\", \"{'title': 'A Good Day to Die Hard'}\", \"{'title': 'About Time'}\", \"{'title': 'After Earth'}\", \"{'title': 'August: Osage County'}\", \"{'title': 'Beautiful Creatures'}\", \"{'title': 'Blue Jasmine'}\", \"{'title': 'Captain Phillips'}\", \"{'title': 'Carrie'}\", \"{'title': 'Cloudy with a Chance of Meatballs 2'}\", \"{'title': 'Despicable Me 2'}\", \"{'title': 'Don Jon'}\", \"{'title': 'Elysium'}\", \"{'title': 'Ender&#39;s Game'}\", \"{'title': 'Epic'}\", \"{'title': 'Escape Plan'}\", \"{'title': 'Evil Dead'}\", \"{'title': 'Fast and Furious 6'}\", \"{'title': 'Frozen'}\", \"{'title': 'G.I. Joe: Retaliation'}\", \"{'title': 'Gangster Squad'}\", \"{'title': 'Grown Ups'}\", \"{'title': 'Her'}\", \"{'title': 'Identity Thief'}\", \"{'title': 'Iron Man 3'}\"], \"x\": [13.0, 46.0, 20.0, 61.0, 40.0, 225.0, 92.0, 12.0, 130.0, 25.0, 50.0, 18.0, 55.0, 30.0, 78.0, 76.0, 6.0, 120.0, 110.0, 100.0, 70.0, 17.0, 160.0, 150.0, 140.0, 60.0, 80.0, 23.0, 35.0, 200.0], \"y\": [26.0, 13.0, 53.0, 76.0, 95.0, 38.0, 67.0, 15.0, 61.0, 37.0, 19.0, 33.0, 107.0, 35.0, 120.0, 368.0, 24.0, 93.0, 62.0, 108.0, 25.0, 54.0, 239.0, 393.0, 123.0, 46.0, 134.0, 25.0, 135.0, 409.0], \"type\": \"scatter\", \"uid\": \"a749b62a-0192-11e9-95c9-5b525f55558c\"}], {}, {\"showLink\": true, \"linkText\": \"Export to plot.ly\"})});</script>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "from plotly.offline import iplot, init_notebook_mode\n",
+    "init_notebook_mode(connected=True)\n",
+    "from graph import trace_values, plot\n",
+    "\n",
+    "movies_trace = trace_values(x_values, y_values, text=titles, name='movie data')\n",
+    "\n",
+    "plot([movies_trace])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Plotting a regression line"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now let's add a regression line to make a prediction of output (revenue) based on an input (the budget).  We'll use the following regression formula:"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "* $\\hat{y} = m x + b$, with $m = 1.7$, and $b = 10$. \n",
+    "\n",
+    "\n",
+    "* $\\hat{y} = 1.7x + 10$\n",
+    "\n",
+    "Write a function called `regression_formula` that calculates our $\\hat{y}$ for any provided value of $x$. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def regression_formula(x):\n",
+    "    return x*1.7+10\n",
+    "    pass"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Check to see that the regression formula generates the correct outputs."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "435.0"
+      ]
+     },
+     "execution_count": 14,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "regression_formula(100) # 180.0\n",
+    "regression_formula(250) # 435.0"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Let's plot the data as well as the regression line to get a sense of what we are looking at."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<script>requirejs.config({paths: { 'plotly': ['https://cdn.plot.ly/plotly-latest.min']},});if(!window.Plotly) {{require(['plotly'],function(plotly) {window.Plotly=plotly;});}}</script>"
+      ],
+      "text/vnd.plotly.v1+html": [
+       "<script>requirejs.config({paths: { 'plotly': ['https://cdn.plot.ly/plotly-latest.min']},});if(!window.Plotly) {{require(['plotly'],function(plotly) {window.Plotly=plotly;});}}</script>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.plotly.v1+json": {
+       "data": [
+        {
+         "mode": "markers",
+         "name": "movie data",
+         "text": [
+          "{'title': '21 &amp; Over'}",
+          "{'title': 'Dredd 3D'}",
+          "{'title': '12 Years a Slave'}",
+          "{'title': '2 Guns'}",
+          "{'title': '42'}",
+          "{'title': '47 Ronin'}",
+          "{'title': 'A Good Day to Die Hard'}",
+          "{'title': 'About Time'}",
+          "{'title': 'After Earth'}",
+          "{'title': 'August: Osage County'}",
+          "{'title': 'Beautiful Creatures'}",
+          "{'title': 'Blue Jasmine'}",
+          "{'title': 'Captain Phillips'}",
+          "{'title': 'Carrie'}",
+      
